@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pinterest Video Downloader</title>
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#E60023">
+    <meta name="description" content="Download Pinterest videos easily with this web app">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Pin Video DL">
+    
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/tailwindcss/2.2.19/tailwind.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        .pinterest-red {
+            background-color: #E60023;
+        }
+        .pinterest-red-text {
+            color: #E60023;
+        }
+        .pinterest-gradient {
+            background: linear-gradient(45deg, #E60023, #BD081C);
+        }
+        .loading {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #E60023;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .hide {
+            display: none;
+        }
+        .input-icon {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            left: 1rem;
+            color: #9CA3AF;
+        }
+        .pinterest-input {
+            padding-left: 2.5rem !important;
+        }
+        .hover-scale {
+            transition: transform 0.2s;
+        }
+        .hover-scale:hover {
+            transform: scale(1.02);
+        }
+        .custom-shadow {
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.1);
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-gray-50">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <div class="text-center mb-12">
+            <div class="flex justify-center mb-4">
+                <i class="fab fa-pinterest text-6xl pinterest-red-text"></i>
+            </div>
+            <h1 class="text-4xl font-bold mb-3 text-gray-800">Pinterest Video Downloader</h1>
+            <p class="text-gray-600 text-lg">Download and save your favorite Pinterest videos in high quality</p>
+        </div>
+
+        <!-- Input Form -->
+        <div class="max-w-xl mx-auto bg-white rounded-2xl custom-shadow p-8 mb-8 hover-scale">
+            <div class="flex flex-col space-y-6">
+                <div class="relative">
+                    <i class="fas fa-link input-icon"></i>
+                    <input type="text" id="reelUrl" 
+                        placeholder="Paste Pinterest video URL here..." 
+                        class="pinterest-input w-full px-4 py-4 rounded-xl border-2 border-gray-200 focus:outline-none focus:border-red-500 focus:ring-2 focus:ring-red-200 text-gray-700">
+                </div>
+                <button onclick="downloadReel()" 
+                    class="pinterest-gradient text-white font-semibold px-6 py-4 rounded-xl hover:opacity-90 transition-all duration-200 flex items-center justify-center space-x-2">
+                    <i class="fas fa-download"></i>
+                    <span>Download Video</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Loading Spinner -->
+        <div id="loading" class="hide flex justify-center my-8">
+            <div class="loading"></div>
+        </div>
+
+        <!-- Video Player Container -->
+        <div id="videoContainer" class="hide max-w-xl mx-auto bg-white rounded-2xl custom-shadow p-6">
+            <video id="videoPlayer" controls class="w-full rounded-xl mb-6">
+                Your browser does not support the video tag.
+            </video>
+            <a id="downloadButton" href="#" download 
+                class="block w-full text-center pinterest-gradient text-white font-semibold px-6 py-4 rounded-xl hover:opacity-90 transition-all duration-200 flex items-center justify-center space-x-2">
+                <i class="fas fa-download"></i>
+                <span>Save Video</span>
+            </a>
+        </div>
+
+        <!-- Error Message -->
+        <div id="errorMessage" class="hide max-w-xl mx-auto mt-4 bg-red-100 text-red-700 px-4 py-3 rounded-xl text-center">
+        </div>
+
+        <!-- Footer -->
+        <div class="text-center mt-12 text-gray-600">
+            <p class="text-sm">Made with <i class="fas fa-heart pinterest-red-text"></i> for Pinterest lovers</p>
+        </div>
+    </div>
+
+    <script>
+        async function downloadReel() {
+            const urlInput = document.getElementById('reelUrl').value;
+            const loading = document.getElementById('loading');
+            const videoContainer = document.getElementById('videoContainer');
+            const errorMessage = document.getElementById('errorMessage');
+            const videoPlayer = document.getElementById('videoPlayer');
+            const downloadButton = document.getElementById('downloadButton');
+
+            if (!urlInput) {
+                showError('Please enter a valid Pinterest URL');
+                return;
+            }
+
+            loading.classList.remove('hide');
+            videoContainer.classList.add('hide');
+            errorMessage.classList.add('hide');
+
+            try {
+                const apiUrl = `https://cors.karankingrider.workers.dev/?url=https://pin-mauve.vercel.app/download?url=${encodeURIComponent(urlInput)}`;
+                const response = await fetch(apiUrl);
+                const data = await response.json();
+
+                if (data.download_url) {
+                    videoPlayer.src = data.download_url;
+                    const timestamp = new Date().toISOString().replace(/[:.-]/g, '');
+                    const uniqueFilename = `pinterest_video_${timestamp}.mp4`;
+                    downloadButton.href = data.download_url;
+                    downloadButton.setAttribute('download', uniqueFilename);
+                    videoContainer.classList.remove('hide');
+                } else {
+                    showError('Could not fetch video URL');
+                }
+            } catch (error) {
+                showError('An error occurred while processing your request');
+            } finally {
+                loading.classList.add('hide');
+            }
+        }
+
+        function showError(message) {
+            const errorMessage = document.getElementById('errorMessage');
+            errorMessage.textContent = message;
+            errorMessage.classList.remove('hide');
+        }
+    </script>
+</body>
+</html>
